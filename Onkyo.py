@@ -9,6 +9,7 @@ receiver = eiscp.eISCP('192.168.1.150')
 quit_program = False
 
 power_state= receiver.raw("PWRQSTN")
+hdmiAudio_state= receiver.raw("HAOQSTN")
 
 sourceBD = "SLI10"
 sourcePC= "SLI05"
@@ -23,6 +24,8 @@ powerOff = "PWR00"
 
 volumeUP = "MVLUP"
 volumeDOWN= "MVLDOWN"
+hdmiAudioOn= "HAO01"
+hdmiAudioOff= "HAO00"
 
 monitorDP = 15
 monitorHDMI= 17
@@ -43,11 +46,12 @@ def moni(input):
         noti(f"Error changing monitor input: {e}")
     
 try:
-    receiver.raw('PWR01')
-    receiver.raw('SLI05')
-    receiver.raw('SLZ23')
+    receiver.raw(powerOn)  
+    receiver.raw(sourcePC)
+    receiver.raw(zoneDefault)
     moni(monitorDP)
     noti("Switched On")
+    receiver.raw(hdmiAudioOff)
 except Exception as e:
     noti("Error switching on: {e}")
 
@@ -59,6 +63,7 @@ def quit_program_func():
     
 def togglePower():
     global power_state
+    power_state = receiver.raw("PWRQSTN")
     try:
         if power_state == powerOn:
             receiver.raw(powerOff)  # Turn off
@@ -76,6 +81,8 @@ def togglePower():
 
 def changeSource(source,input,message):
     try:
+        receiver.raw(hdmiAudioOff)  
+        time.sleep(2)
         receiver.raw(source)  
         noti(message)
         moni(input)
@@ -91,6 +98,24 @@ def changeZone(zone,message):
     except Exception as e:
         noti(f"Error switching to Source: {e}")
 
+def changeHDMIAudio():
+    global hdmiAudio_state
+    hdmiAudio_state= receiver.raw("HAOQSTN")
+    try:
+        if hdmiAudio_state == hdmiAudioOn:
+            receiver.raw(hdmiAudioOff)  
+            noti("HDMI Audio: OFF")
+            hdmiAudio_state= receiver.raw("HAOQSTN")
+
+        else:
+            receiver.raw(hdmiAudioOn)  # Turn on
+            noti("HDMI Audio: ON")
+            hdmiAudio_state= receiver.raw("HAOQSTN")
+
+        time.sleep(1)
+    except Exception as e:
+            noti(f"Error toggling power: {e}")
+
 def changeVolume(change):
     try:
         receiver.raw(change) 
@@ -103,8 +128,7 @@ keyboard.add_hotkey('ctrl+alt+F1', lambda: changeSource(sourcePC,monitorDP, "Sou
 keyboard.add_hotkey('ctrl+alt+F2', lambda: changeSource(sourceBD,monitorHDMI2, "Source: BD"))
 keyboard.add_hotkey('ctrl+alt+F3', lambda: changeSource(sourceGame,monitorHDMI, "Source: Game"))
 keyboard.add_hotkey('ctrl+alt+F5', lambda: changeZone(zoneDefault,"Zone 2: PC"))
-keyboard.add_hotkey('ctrl+alt+F6', lambda: changeZone(zoneBD,"Zone 2: BD"))
-keyboard.add_hotkey('ctrl+alt+F7', lambda: changeZone(zoneGame,"Zone 2: Game"))
+keyboard.add_hotkey('ctrl+alt+F6', changeHDMIAudio)
 keyboard.add_hotkey('ctrl+alt+up', lambda: changeVolume(volumeUP))
 keyboard.add_hotkey('ctrl+alt+down', lambda: changeVolume(volumeDOWN))
 
