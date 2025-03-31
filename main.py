@@ -1,8 +1,6 @@
 from infi.systray import SysTrayIcon
-from PIL import Image
 from onkyo import AVRControl as av
 from onkyo import time
-import threading
 
 ip_address = "192.168.1.150"
 main = av(ip_address)
