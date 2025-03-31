@@ -34,10 +34,13 @@ def noti(message_user:str):
     an="Onkyo Script"
     notification.notify(title=tt,message=message_user, timeout=ti, app_name=an)
 
-def moni(input):
+def moni(input):      #will only work with duel monitor setup
+    index = 0
     try:
         monitors = get_monitors()
-        with monitors[0] as monitor:
+        if monitors[index]!= :
+            index = 1
+        with monitors[index] as monitor:
             monitor.set_input_source(input)
     except Exception as e:
         noti(f"Error changing monitor input: {e}")
@@ -58,7 +61,7 @@ def quit_program_func():
     global quit_program
     quit_program = True
     
-def togglePower():
+def togglePower(): #switch AVR on and off
     global power_state
     power_state = receiver.raw("PWRQSTN")
     try:
@@ -76,7 +79,7 @@ def togglePower():
     except Exception as e:
             noti(f"Error toggling power: {e}")
 
-def changeSource(source,input,message):
+def changeSource(source,input,message):  #change HDMI Input
     try:
         receiver.raw(hdmiAudioOff)  
         time.sleep(2)
@@ -87,7 +90,7 @@ def changeSource(source,input,message):
     except Exception as e:
             noti(f"Error toggling Source: {e}")
 
-def changeZone(zone,message):
+def changeZone(zone,message): #Change Zone2 Input
     try:
         receiver.raw(zone) 
         noti(message)
@@ -95,7 +98,7 @@ def changeZone(zone,message):
     except Exception as e:
         noti(f"Error switching to Source: {e}")
 
-def changeHDMIAudio():
+def changeHDMIAudio(): #Switch HDMI Out Audio on and off
     global hdmiAudio_state
     hdmiAudio_state= receiver.raw("HAOQSTN")
     try:
@@ -113,7 +116,7 @@ def changeHDMIAudio():
     except Exception as e:
             noti(f"Error toggling power: {e}")
 
-def changeVolume(change):
+def changeVolume(change): #change main volume
     try:
         receiver.raw(change) 
     except Exception as e:
