@@ -23,7 +23,7 @@ class AVRControl:
         self.monitorDP = 15
         self.monitorHDMI= 17
         self.monitorHDMI2= 18
-        self.runnig= True
+        self.running= True
         self.monitors = get_monitors() 
         self.monitor_index = self.get_monitor_index()
         self.connect_receiver(ip_address)
@@ -46,7 +46,7 @@ class AVRControl:
         notification.title = "Onkyo Control"
         notification.timeout = 1000
         notification.message = message_user
-        notification.icon = "icon.png"
+        notification.icon = "icon.ico"
         notification.send()
 
     def connect_receiver(self,ip_address):
@@ -139,10 +139,11 @@ class AVRControl:
         keyboard.add_hotkey('ctrl+alt+down', lambda: self.change_volume(self.volumeDOWN))
 
     def run(self):
-        while self.runnig:
-            time.sleep(1)
-            
-    def exit(self):
-        self.disconnect_receiver()
-        self.running= False
+        while self.running:
+            time.sleep(10)
 
+    def stop(self):
+        self.running=False
+        self.disconnect_receiver()
+
+        

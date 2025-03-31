@@ -1,39 +1,29 @@
-import pystray
+from infi.systray import SysTrayIcon
 from PIL import Image
-import threading
 from onkyo import AVRControl as av
 from onkyo import time
-import os
+import threading
 
 ip_address = "192.168.1.150"
-image = Image.open("icon.png")
+main = av(ip_address)
 
-def after_click(icon, query):
-    if str(query) == "Reload":
-        main.disconnect_receiver()
-        main.noti("Disconnected")
-        time.sleep(5)
-        try:
-            main.connect_receiver(ip_address)
-            main.noti("Connected")
-        except Exception as e:
-            main.noti(f"Error: {e}")
+def reconnect(systray):
+    main.disconnect_receiver()
+    main.noti("Disconnected")
+    time.sleep(2)
+    try:
+        main.connect_receiver(ip_address)
+        main.noti("Connected")
+    except Exception as e:
+        main.noti(f"Error: {e}")
 
-    elif str(query) == "Exit":
-        main.exit()
-        icon.stop()
-        os._exit(0) 
-        
- 
+def exit_app(systray):
+    main.stop()
 
-icon = pystray.Icon("AVR", image, "AVR Control", 
-                    menu=pystray.Menu(
-    pystray.MenuItem("Reconnect", 
-                     after_click),
-    pystray.MenuItem("Exit", after_click)))
- 
+menu_options = (("Reconnect",None, reconnect),)
+systray = SysTrayIcon("icon.ico","AVR Control", menu_options, on_quit=exit_app) 
+
 if __name__ == "__main__":
-    threading.Thread(daemon=True, target=icon.run).start()
-    main = av(ip_address)
+    systray.start()
     main.run()
     
