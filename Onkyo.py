@@ -3,166 +3,146 @@ import eiscp
 import time
 from notifypy import Notify
 from monitorcontrol import get_monitors
-import pystray
-from PIL import Image
 
-image = Image.open("icon.png")
+class AVRControl:
+    def __init__(self,ip_address):
+        self.ip_address= ip_address   
+        self.receiver = None                              #Zone 2 has to stay on to establish connection in standby mode
+        self.sourceBD = "SLI10"
+        self.sourcePC= "SLI05"
+        self.sourceGame = "SLI02"
+        self.zoneDefault = "SLZ23"
+        self.zoneBD = "SLZ10"
+        self.zoneGame = "SLZ02"
+        self.powerOn = "PWR01"
+        self.powerOff = "PWR00"
+        self.volumeUP = "MVLUP"
+        self.volumeDOWN= "MVLDOWN"
+        self.hdmiAudioOn= "HAO01"
+        self.hdmiAudioOff= "HAO00"
+        self.monitorDP = 15
+        self.monitorHDMI= 17
+        self.monitorHDMI2= 18
+        self.runnig= True
+        self.monitors = get_monitors() 
+        self.monitor_index = self.get_monitor_index()
+        self.connect_receiver(ip_address)
+        self.default_startup()
+        self.setup_hotkeys()
 
-IP_ADDRESS= "192.168.1.150" #Zone 2 has to stay on to establish connection in standby mode
-sourceBD = "SLI10"
-sourcePC= "SLI05"
-sourceGame = "SLI02"
-
-zoneDefault = "SLZ23"
-zoneBD = "SLZ10"
-zoneGame = "SLZ02"
-
-powerOn = "PWR01"
-powerOff = "PWR00"
-
-volumeUP = "MVLUP"
-volumeDOWN= "MVLDOWN"
-hdmiAudioOn= "HAO01"
-hdmiAudioOff= "HAO00"
-
-monitorDP = 15
-monitorHDMI= 17
-monitorHDMI2= 18
-
-index = 0
-
-monitors = get_monitors() #finds correct monitor, only one of my monitors supports this, change for diferent monitor setup
-for monitor in monitors:
-    try:
-        with monitor:
-            monitor.get_input_source()
-        break
-    except:
-        index = index +1
-
-def noti(message_user:str):
-    notification = Notify()
-    notification.title = "Onkyo Control"
-    notification.timeout = 1000
-    notification.message = message_user
-    notification.icon = "icon.png"
-    notification.send()
-
-try:
-    receiver = eiscp.eISCP(IP_ADDRESS)
-except Exception as e:
-    noti(f"Error: {e}")
-
-try:
-    receiver.raw(powerOn)  
-    receiver.raw(sourcePC)
-    receiver.raw(zoneDefault) 
-    with monitors[index] as monitor:
-            monitor.set_input_source(monitorDP)
-    noti("Switched On")
-    receiver.raw(hdmiAudioOff)
-except Exception as e:
-    noti(f"Error switching on: {e}")
+    def get_monitor_index(self):    
+        index = 0                                 #finds correct monitor, only one of my monitors supports this, change for diferent monitor setup
+        for monitor in self.monitors:
+            try:
+                with monitor:
+                    monitor.get_input_source()
+                return index
+            except:
+                index += 1
+        return 0
     
-def togglePower(): #switch AVR on and off
-    global power_state
-    power_state = receiver.raw("PWRQSTN")
-    try:
-        if power_state == powerOn:
-            receiver.raw(powerOff)  # Turn off
-            noti("Power: OFF")
-            power_state = receiver.raw("PWRQSTN")
+    def noti(self,message_user:str):
+        notification = Notify()
+        notification.title = "Onkyo Control"
+        notification.timeout = 1000
+        notification.message = message_user
+        notification.icon = "icon.png"
+        notification.send()
 
-        else:
-            receiver.raw(powerOn)  # Turn on
-            noti("Power: ON")
-            power_state = receiver.raw("PWRQSTN")
-
-        time.sleep(1)
-    except Exception as e:
-            noti(f"Error toggling power: {e}")
-
-def changeSource(source,input,message):  #change HDMI Input
-    try:
-        receiver.raw(hdmiAudioOff)  
-        receiver.raw(source)  
-        noti(message)
-        with monitors[index] as monitor:
-            monitor.set_input_source(input)
-        restart_icon
-    except Exception as e:
-            noti(f"Error toggling Source: {e}")
-
-def changeZone(zone,message): #Change Zone2 Input
-    try:
-        receiver.raw(zone) 
-        noti(message)
-        time.sleep(1)
-    except Exception as e:
-        noti(f"Error switching to Source: {e}")
-
-def changeHDMIAudio(): #Switch HDMI Out Audio on and off
-    global hdmiAudio_state
-    hdmiAudio_state= receiver.raw("HAOQSTN")
-    try:
-        if hdmiAudio_state == hdmiAudioOn:
-            receiver.raw(hdmiAudioOff)  
-            noti("HDMI Audio: OFF")
-            hdmiAudio_state= receiver.raw("HAOQSTN")
-
-        else:
-            receiver.raw(hdmiAudioOn)  # Turn on
-            noti("HDMI Audio: ON")
-            hdmiAudio_state= receiver.raw("HAOQSTN")
-
-        time.sleep(1)
-    except Exception as e:
-            noti(f"Error toggling power: {e}")
-
-def changeVolume(change): #change main volume
-    try:
-        receiver.raw(change) 
-    except Exception as e:
-        noti(f"Error changing Volume: {e}")
-    
-
-keyboard.add_hotkey('ctrl+alt+p', togglePower)
-keyboard.add_hotkey('ctrl+alt+F1', lambda: changeSource(sourcePC,monitorDP, "Source: PC"))
-keyboard.add_hotkey('ctrl+alt+F2', lambda: changeSource(sourceBD,monitorHDMI2, "Source: BD"))
-keyboard.add_hotkey('ctrl+alt+F3', lambda: changeSource(sourceGame,monitorHDMI, "Source: Game"))
-#keyboard.add_hotkey('ctrl+alt+F6', lambda: changeZone(zoneDefault,"Zone 2: PC")) not using Zone 2 anymore
-keyboard.add_hotkey('ctrl+alt+F5', changeHDMIAudio)
-keyboard.add_hotkey('ctrl+alt+up', lambda: changeVolume(volumeUP))
-keyboard.add_hotkey('ctrl+alt+down', lambda: changeVolume(volumeDOWN))
-
-def after_click(icon, query):
-    global receiver
-    if str(query) == "Reload":
-        receiver.disconnect()
-        noti("Disconnected")
-        time.sleep(5)
+    def connect_receiver(self,ip_address):
         try:
-            receiver = eiscp.eISCP(IP_ADDRESS)
-            noti("Connected")
+            self.receiver = eiscp.eISCP(ip_address)
+            self.noti("AVR Connected")
         except Exception as e:
-            noti(f"Error: {e}")
+            self.noti(f"Error: {e}")
+    
+    def disconnect_receiver(self):
+        self.receiver.disconnect()
 
-    elif str(query) == "Exit":
-        receiver.disconnect()
-        icon.stop()
- 
+    def default_startup(self):
+        try:
+            self.receiver.raw(self.powerOn)  
+            self.receiver.raw(self.sourcePC)
+            self.receiver.raw(self.zoneDefault) 
+            with self.monitors[self.monitor_index] as monitor:
+                    monitor.set_input_source(self.monitorDP)
+            self.noti("Switched On")
+            self.receiver.raw(self.hdmiAudioOff)
+        except Exception as e:
+            self.noti(f"Error switching on: {e}")
+    
+    def toggle_power(self): #switch AVR on and off
+        power_state = self.receiver.raw("PWRQSTN")
+        try:
+            if power_state == self.powerOn:
+                self.receiver.raw(self.powerOff)  # Turn off
+                self.noti("Power: OFF")
+                power_state = self.receiver.raw("PWRQSTN")
 
-icon = pystray.Icon("AVR", image, "AVR Control", 
-                    menu=pystray.Menu(
-    pystray.MenuItem("Reconnect", 
-                     after_click),
-    pystray.MenuItem("Exit", after_click)))
- 
-def restart_icon():
-    icon.stop()
-    time.sleep(2)
-    icon.run()
+            else:
+                self.receiver.raw(self.powerOn)  # Turn on
+                self.noti("Power: ON")
+                power_state = self.receiver.raw("PWRQSTN")
 
-icon.run()
+            time.sleep(1)
+        except Exception as e:
+                self.noti(f"Error toggling power: {e}")
 
+    def change_source(self,source,input,message):  #change HDMI Input
+        try:
+            self.receiver.raw(self.hdmiAudioOff)  
+            self.receiver.raw(source)  
+            self.noti(message)
+            with self.monitors[self.monitor_index] as monitor:
+                monitor.set_input_source(input)
+        except Exception as e:
+                self.noti(f"Error toggling Source: {e}")
+
+    def change_zone(self,zone,message): #Change Zone2 Input
+        try:
+            self.receiver.raw(zone) 
+            self.noti(message)
+            time.sleep(1)
+        except Exception as e:
+            self.noti(f"Error switching to Source: {e}")
+
+    def change_HDMI_audio(self): #Switch HDMI Out Audio on and off
+        global hdmiAudio_state
+        hdmiAudio_state= self.receiver.raw("HAOQSTN")
+        try:
+            if hdmiAudio_state == self.hdmiAudioOn:
+                self.receiver.raw(self.hdmiAudioOff)  
+                self.noti("HDMI Audio: OFF")
+                hdmiAudio_state= self.receiver.raw("HAOQSTN")
+            else:
+                self.receiver.raw(self.hdmiAudioOn)  # Turn on
+                self.noti("HDMI Audio: ON")
+                hdmiAudio_state= self.receiver.raw("HAOQSTN")
+            time.sleep(1)
+        except Exception as e:
+                self.noti(f"Error toggling power: {e}")
+
+    def change_volume(self,change): #change main volume
+        try:
+            self.receiver.raw(change) 
+        except Exception as e:
+            self.noti(f"Error changing Volume: {e}")
+        
+    def setup_hotkeys(self):
+        keyboard.add_hotkey('ctrl+alt+p', self.toggle_power)
+        keyboard.add_hotkey('ctrl+alt+F1', lambda: self.change_source(self.sourcePC,self.monitorDP, "Source: PC"))
+        keyboard.add_hotkey('ctrl+alt+F2', lambda: self.change_source(self.sourceBD,self.monitorHDMI2, "Source: BD"))
+        keyboard.add_hotkey('ctrl+alt+F3', lambda: self.change_source(self.sourceGame,self.monitorHDMI, "Source: Game"))
+        #keyboard.add_hotkey('ctrl+alt+F6', lambda: self.change_zone(self.zoneDefault,"Zone 2: PC")) not using Zone 2 anymore
+        keyboard.add_hotkey('ctrl+alt+F5', self.change_HDMI_audio)
+        keyboard.add_hotkey('ctrl+alt+up', lambda: self.change_volume(self.volumeUP))
+        keyboard.add_hotkey('ctrl+alt+down', lambda: self.change_volume(self.volumeDOWN))
+
+    def run(self):
+        while self.runnig:
+            time.sleep(1)
+            
+    def exit(self):
+        self.disconnect_receiver()
+        self.running= False
 
