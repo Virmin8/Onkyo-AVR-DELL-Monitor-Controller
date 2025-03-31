@@ -1,7 +1,7 @@
 import keyboard
 import eiscp
 import time
-from plyer import notification
+from notifypy import Notify
 from monitorcontrol import get_monitors
 import pystray
 from PIL import Image
@@ -30,10 +30,11 @@ monitorHDMI= 17
 monitorHDMI2= 18
 
 def noti(message_user:str):
-    tt="Integra"
-    ti=10
-    an="Onkyo Script"
-    notification.notify(title=tt,message=message_user, timeout=ti, app_name=an)
+    notification = Notify()
+    notification.title = "Onkyo Script"
+    notification.timeout = 1000
+    notification.message = message_user
+    notification.send()
 
 def moni(input):      
     index = 0
@@ -141,9 +142,11 @@ def after_click(icon, query):
     global receiver
     if str(query) == "Reload":
         receiver.disconnect()
+        noti("Disconnected")
         time.sleep(5)
         try:
             receiver = eiscp.eISCP(IP_ADDRESS)
+            noti("Connected")
         except Exception as e:
             noti(f"Error: {e}")
 
