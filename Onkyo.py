@@ -31,9 +31,10 @@ monitorHDMI2= 18
 
 def noti(message_user:str):
     notification = Notify()
-    notification.title = "Onkyo Script"
+    notification.title = "Onkyo Control"
     notification.timeout = 1000
     notification.message = message_user
+    notification.icon = "icon.png"
     notification.send()
 
 def moni(input):      
@@ -155,9 +156,9 @@ def after_click(icon, query):
         icon.stop()
  
  
-icon = pystray.Icon("AVR", image, "AVR Controll", 
+icon = pystray.Icon("AVR", image, "AVR Control", 
                     menu=pystray.Menu(
-    pystray.MenuItem("Reload", 
+    pystray.MenuItem("Reconnect", 
                      after_click),
     pystray.MenuItem("Exit", after_click)))
  
