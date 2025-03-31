@@ -8,9 +8,6 @@ receiver = eiscp.eISCP('192.168.1.150')
 
 quit_program = False
 
-power_state= receiver.raw("PWRQSTN")
-hdmiAudio_state= receiver.raw("HAOQSTN")
-
 sourceBD = "SLI10"
 sourcePC= "SLI05"
 sourceGame = "SLI02"
@@ -53,7 +50,7 @@ try:
     noti("Switched On")
     receiver.raw(hdmiAudioOff)
 except Exception as e:
-    noti("Error switching on: {e}")
+    noti(f"Error switching on: {e}")
 
 
 
