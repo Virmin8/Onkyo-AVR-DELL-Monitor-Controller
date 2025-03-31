@@ -3,11 +3,12 @@ import eiscp
 import time
 from plyer import notification
 from monitorcontrol import get_monitors
+import pystray
+from PIL import Image
 
-receiver = eiscp.eISCP('192.168.1.150')
+image = Image.open("icon.png")
 
-quit_program = False
-
+IP_ADDRESS= "192.168.1.150"
 sourceBD = "SLI10"
 sourcePC= "SLI05"
 sourceGame = "SLI02"
@@ -34,17 +35,28 @@ def noti(message_user:str):
     an="Onkyo Script"
     notification.notify(title=tt,message=message_user, timeout=ti, app_name=an)
 
-def moni(input):      #will only work with duel monitor setup
+def moni(input):      
     index = 0
     try:
-        monitors = get_monitors()
-        if monitors[index]!= :
-            index = 1
+        monitors = get_monitors() #finds correct monitor, only one of my monitors supports this, change for diferent monitor setup
+        for monitor in monitors:
+            try:
+                with monitor:
+                    monitor.get_input_source()
+                break
+            except:
+                index = index +1
+
         with monitors[index] as monitor:
             monitor.set_input_source(input)
     except Exception as e:
         noti(f"Error changing monitor input: {e}")
-    
+
+try:
+    receiver = eiscp.eISCP(IP_ADDRESS)
+except Exception as e:
+    noti(f"Error: {e}")
+
 try:
     receiver.raw(powerOn)  
     receiver.raw(sourcePC)
@@ -54,12 +66,6 @@ try:
     receiver.raw(hdmiAudioOff)
 except Exception as e:
     noti(f"Error switching on: {e}")
-
-
-
-def quit_program_func():
-    global quit_program
-    quit_program = True
     
 def togglePower(): #switch AVR on and off
     global power_state
@@ -123,7 +129,6 @@ def changeVolume(change): #change main volume
         noti(f"Error changing Volume: {e}")
 
 keyboard.add_hotkey('ctrl+alt+p', togglePower)
-keyboard.add_hotkey('ctrl+alt+q', quit_program_func)
 keyboard.add_hotkey('ctrl+alt+F1', lambda: changeSource(sourcePC,monitorDP, "Source: PC"))
 keyboard.add_hotkey('ctrl+alt+F2', lambda: changeSource(sourceBD,monitorHDMI2, "Source: BD"))
 keyboard.add_hotkey('ctrl+alt+F3', lambda: changeSource(sourceGame,monitorHDMI, "Source: Game"))
@@ -132,7 +137,26 @@ keyboard.add_hotkey('ctrl+alt+F6', changeHDMIAudio)
 keyboard.add_hotkey('ctrl+alt+up', lambda: changeVolume(volumeUP))
 keyboard.add_hotkey('ctrl+alt+down', lambda: changeVolume(volumeDOWN))
 
-while not quit_program:
-    time.sleep(0.1)
+def after_click(icon, query):
+    global receiver
+    if str(query) == "Reload":
+        receiver.disconnect()
+        time.sleep(5)
+        try:
+            receiver = eiscp.eISCP(IP_ADDRESS)
+        except Exception as e:
+            noti(f"Error: {e}")
 
-receiver.disconnect()
+    elif str(query) == "Exit":
+        receiver.disconnect()
+        icon.stop()
+ 
+ 
+icon = pystray.Icon("AVR", image, "AVR Controll", 
+                    menu=pystray.Menu(
+    pystray.MenuItem("Reload", 
+                     after_click),
+    pystray.MenuItem("Exit", after_click)))
+ 
+icon.run()
+
