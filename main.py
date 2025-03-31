@@ -7,11 +7,10 @@ main = av(ip_address)
 
 def reconnect(systray):
     main.disconnect_receiver()
-    main.noti("Disconnected")
+    main.noti("AVR Disconnected")
     time.sleep(2)
     try:
         main.connect_receiver(ip_address)
-        main.noti("Connected")
     except Exception as e:
         main.noti(f"Error: {e}")
 
