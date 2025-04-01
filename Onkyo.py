@@ -25,10 +25,7 @@ class AVRControl:
         self.monitorHDMI2= 18
         self.running= True
         self.monitors = get_monitors() 
-        self.monitor_index = self.get_monitor_index()
-        self.connect_receiver(ip_address)
-        self.default_startup()
-        self.setup_hotkeys()
+        self.index = self.get_monitor_index()
 
     def get_monitor_index(self):    
         index = 0                                 #finds correct monitor, only one of my monitors supports this, change for diferent monitor setup
@@ -41,6 +38,9 @@ class AVRControl:
                 index += 1
         return 0
     
+    def set_monitor_index(self,monitor_index):
+        self.index = monitor_index
+        
     def noti(self,message_user:str):
         notification = Notify()
         notification.title = "Onkyo Control"
@@ -64,7 +64,7 @@ class AVRControl:
             self.receiver.raw(self.powerOn)  
             self.receiver.raw(self.sourcePC)
             self.receiver.raw(self.zoneDefault) 
-            with self.monitors[self.monitor_index] as monitor:
+            with self.monitors[self.index] as monitor:
                     monitor.set_input_source(self.monitorDP)
             self.noti("Switched On")
             self.receiver.raw(self.hdmiAudioOff)
@@ -93,7 +93,7 @@ class AVRControl:
             self.receiver.raw(self.hdmiAudioOff)  
             self.receiver.raw(source)  
             self.noti(message)
-            with self.monitors[self.monitor_index] as monitor:
+            with self.monitors[self.index] as monitor:
                 monitor.set_input_source(input)
         except Exception as e:
                 self.noti(f"Error toggling Source: {e}")
@@ -139,6 +139,10 @@ class AVRControl:
         keyboard.add_hotkey('ctrl+alt+down', lambda: self.change_volume(self.volumeDOWN))
 
     def run(self):
+        self.connect_receiver(self.ip_address)
+        self.default_startup()
+        self.setup_hotkeys()
+
         while self.running:
             time.sleep(10)
 

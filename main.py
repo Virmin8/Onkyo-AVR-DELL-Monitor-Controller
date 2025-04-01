@@ -13,6 +13,8 @@ def reconnect(systray):
         main.connect_receiver(ip_address)
     except Exception as e:
         main.noti(f"Error: {e}")
+    index = main.get_monitor_index()
+    main.set_monitor_index(index)
 
 def exit_app(systray):
     main.stop()
