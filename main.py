@@ -3,7 +3,9 @@ from onkyo import AVRControl as av
 from onkyo import time
 
 ip_address = "192.168.1.150"
-main = av(ip_address)
+monitor_model = "S3220DGF"
+
+main = av(ip_address,monitor_model)
 
 def reconnect(systray):
     main.disconnect_receiver()

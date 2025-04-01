@@ -5,7 +5,7 @@ from notifypy import Notify
 from monitorcontrol import get_monitors
 
 class AVRControl:
-    def __init__(self,ip_address):
+    def __init__(self,ip_address,model):
         self.ip_address= ip_address   
         self.receiver = None                              #Zone 2 has to stay on to establish connection in standby mode
         self.sourceBD = "SLI10"
@@ -25,18 +25,19 @@ class AVRControl:
         self.monitorHDMI2= 18
         self.running= True
         self.monitors = get_monitors() 
-        self.index = self.get_monitor_index()
+        self.index = None
+        self.monitor_model = model
 
     def get_monitor_index(self):    
         index = 0                                 #finds correct monitor, only one of my monitors supports this, change for diferent monitor setup
-        for monitor in self.monitors:
-            try:
+        for monitor in self.monitors:                             #finds correct monitor, only one of my monitors supports this, change for diferent monitor setup
+            try: 
                 with monitor:
-                    monitor.get_input_source()
-                return index
+                    test = monitor.get_vcp_capabilities()
+                    if test["model"] == self.monitor_model:
+                        return index
             except:
                 index += 1
-        return 0
     
     def set_monitor_index(self,monitor_index):
         self.index = monitor_index
@@ -60,6 +61,7 @@ class AVRControl:
         self.receiver.disconnect()
 
     def default_startup(self):
+        self.index = self.get_monitor_index()
         try:
             self.receiver.raw(self.powerOn)  
             self.receiver.raw(self.sourcePC)
