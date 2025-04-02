@@ -90,7 +90,7 @@ class AVRControl:
             self.receiver.raw(self.hdmiAudioOff)  
             self.receiver.raw(source)  
             self.noti(message)
-            with self.monitors[self.index] as monitor:
+            with self.monitors as monitor:
                 monitor.set_input_source(input)
         except Exception as e:
                 self.noti(f"Error toggling Source: {e}")
