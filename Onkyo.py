@@ -5,7 +5,7 @@ from notifypy import Notify
 from monitorcontrol import get_monitors
 
 class AVRControl:
-    def __init__(self,ip_address,model):
+    def __init__(self,ip_address,model,amount):
         self.ip_address= ip_address   
         self.receiver = None                              #Zone 2 has to stay on to establish connection in standby mode
         self.sourceBD = "SLI10"
@@ -24,23 +24,18 @@ class AVRControl:
         self.monitorHDMI= 17
         self.monitorHDMI2= 18
         self.running= True
-        self.monitors = get_monitors() 
-        self.index = None
+        self.monitors = None 
         self.monitor_model = model
+        self.monitor_amount = amount
 
-    def get_monitor_index(self):    
-        index = 0                                 #finds correct monitor, only one of my monitors supports this, change for diferent monitor setup
-        for monitor in self.monitors:                             #finds correct monitor, only one of my monitors supports this, change for diferent monitor setup
-            try: 
-                with monitor:
-                    test = monitor.get_vcp_capabilities()
-                    if test["model"] == self.monitor_model:
-                        return index
-            except:
-                index += 1
-    
-    def set_monitor_index(self,monitor_index):
-        self.index = monitor_index
+    def get_main_monitor(self):    
+        for x in range(self.monitor_amount):   
+            self.monitors = get_monitors()[x]   
+            with self.monitors:
+                test = self.monitors.get_vcp_capabilities()
+                if test["model"] == self.monitor_model:
+                    break
+             
         
     def noti(self,message_user:str):
         notification = Notify()
@@ -61,12 +56,12 @@ class AVRControl:
         self.receiver.disconnect()
 
     def default_startup(self):
-        self.index = self.get_monitor_index()
+        self.get_main_monitor()
         try:
             self.receiver.raw(self.powerOn)  
             self.receiver.raw(self.sourcePC)
             self.receiver.raw(self.zoneDefault) 
-            with self.monitors[self.index] as monitor:
+            with self.monitors as monitor:
                     monitor.set_input_source(self.monitorDP)
             self.noti("Switched On")
             self.receiver.raw(self.hdmiAudioOff)

@@ -4,8 +4,9 @@ from onkyo import time
 
 ip_address = "192.168.1.150"
 monitor_model = "S3220DGF"
+monitor_amount = 3
 
-main = av(ip_address,monitor_model)
+main = av(ip_address,monitor_model,monitor_amount)
 
 def reconnect(systray):
     main.disconnect_receiver()
@@ -15,8 +16,7 @@ def reconnect(systray):
         main.connect_receiver(ip_address)
     except Exception as e:
         main.noti(f"Error: {e}")
-    index = main.get_monitor_index()
-    main.set_monitor_index(index)
+    main.get_main_monitor()
 
 def exit_app(systray):
     main.stop()
