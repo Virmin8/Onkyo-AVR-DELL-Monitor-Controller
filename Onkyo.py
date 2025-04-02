@@ -86,6 +86,7 @@ class AVRControl:
                 self.noti(f"Error toggling power: {e}")
 
     def change_source(self,source,input,message):  #change HDMI Input
+        self.get_main_monitor()
         try:
             self.receiver.raw(self.hdmiAudioOff)  
             self.receiver.raw(source)  
