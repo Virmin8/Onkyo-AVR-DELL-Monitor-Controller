@@ -1,10 +1,14 @@
 from infi.systray import SysTrayIcon
 from onkyo import AVRControl as av
 from onkyo import time
+import yaml
 
-ip_address = "192.168.1.150"
-monitor_model = "S3220DGF"
-monitor_amount = 3
+with open('config.yaml') as config:
+    config_dict = yaml.safe_load(config)
+
+ip_address = config_dict['ip_address']
+monitor_model = config_dict['monitor_model']
+monitor_amount = config_dict['monitor_amount']
 
 main = av(ip_address,monitor_model,monitor_amount)
 
