@@ -30,11 +30,14 @@ class AVRControl:
 
     def get_main_monitor(self):    
         for x in range(self.monitor_amount):   
-            self.monitors = get_monitors()[x]   
-            with self.monitors:
-                test = self.monitors.get_vcp_capabilities()
-                if test["model"] == self.monitor_model:
-                    break
+            try:
+                self.monitors = get_monitors()[x]   
+                with self.monitors:
+                    test = self.monitors.get_vcp_capabilities()
+                    if test["model"] == self.monitor_model:
+                        break
+            except Exception:
+                pass
              
         
     def noti(self,message_user:str):
