@@ -11,7 +11,6 @@ class AVRControl:
         self.sourceBD = "SLI10"
         self.sourcePC= "SLI05"
         self.sourceGame = "SLI02"
-        self.zoneDefault = "SLZ23"
         self.zoneBD = "SLZ10"
         self.zoneGame = "SLZ02"
         self.powerOn = "PWR01"
@@ -59,11 +58,9 @@ class AVRControl:
         self.receiver.disconnect()
 
     def default_startup(self):
-        self.get_main_monitor()
         try:
             self.receiver.raw(self.powerOn)  
             self.receiver.raw(self.sourcePC)
-            self.receiver.raw(self.zoneDefault) 
             with self.monitors as monitor:
                     monitor.set_input_source(self.monitorDP)
             self.noti("Switched On")
@@ -141,6 +138,7 @@ class AVRControl:
 
     def run(self):
         self.connect_receiver(self.ip_address)
+        self.get_main_monitor()
         self.default_startup()
         self.setup_hotkeys()
 
