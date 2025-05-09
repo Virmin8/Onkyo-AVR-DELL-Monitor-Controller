@@ -15,11 +15,13 @@ main = av(ip_address,monitor_model,monitor_amount)
 def reconnect(systray):
     main.stop()
     main.run()
+    
 def exit_app(systray):
     main.stop()
 
 menu_options = (("Reconnect",None, reconnect),)
 systray = SysTrayIcon("icon.ico","AVR Control", menu_options, on_quit=exit_app) 
+
 
 if __name__ == "__main__":
     systray.start()

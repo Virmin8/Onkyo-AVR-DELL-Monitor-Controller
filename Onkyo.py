@@ -136,7 +136,7 @@ class AVRControl:
         keyboard.add_hotkey('ctrl+alt+F5', self.change_HDMI_audio)
         keyboard.add_hotkey('ctrl+alt+up', lambda: self.change_volume(self.volumeUP))
         keyboard.add_hotkey('ctrl+alt+down', lambda: self.change_volume(self.volumeDOWN))
-
+    
     def run(self):
         self.connect_receiver(self.ip_address)
         self.get_main_monitor()
