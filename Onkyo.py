@@ -62,6 +62,7 @@ class AVRControl:
             self.receiver.raw(self.powerOn)  
             self.receiver.raw(self.sourcePC)
             with self.monitors as monitor:
+                if (monitor.get_input_source() != "InputSource.DP1"):
                     monitor.set_input_source(self.monitorDP)
             self.noti("Switched On")
             self.receiver.raw(self.hdmiAudioOff)

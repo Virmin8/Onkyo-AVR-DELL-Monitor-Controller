@@ -13,15 +13,8 @@ monitor_amount = config_dict['monitor_amount']
 main = av(ip_address,monitor_model,monitor_amount)
 
 def reconnect(systray):
-    main.disconnect_receiver()
-    main.noti("AVR Disconnected")
-    time.sleep(2)
-    try:
-        main.connect_receiver(ip_address)
-    except Exception as e:
-        main.noti(f"Error: {e}")
-    main.get_main_monitor()
-
+    main.stop()
+    main.run()
 def exit_app(systray):
     main.stop()
 
