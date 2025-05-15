@@ -3,6 +3,7 @@ import eiscp
 import time
 from notifypy import Notify
 from monitorcontrol import get_monitors
+from ping3 import ping
 
 class AVRControl:
     def __init__(self,ip_address,model,amount):
@@ -26,6 +27,7 @@ class AVRControl:
         self.monitors = None 
         self.monitor_model = model
         self.monitor_amount = amount
+        self.last_message = None
 
     def get_main_monitor(self):    
         for x in range(self.monitor_amount):   
@@ -40,17 +42,21 @@ class AVRControl:
              
         
     def noti(self,message_user:str):
+        if self.last_message == message_user:
+            return
+        self.last_message = message_user
         notification = Notify()
         notification.title = "Onkyo Control"
         notification.timeout = 1000
-        notification.message = message_user
+        notification.message = self.last_message
         notification.icon = "icon.ico"
         notification.send()
 
     def connect_receiver(self,ip_address):
         try:
             self.receiver = eiscp.eISCP(ip_address)
-            self.noti("AVR Connected")
+            if self.test_onkyo():
+                self.noti("AVR Connected")
         except Exception as e:
             self.noti(f"Error: {e}")
     
@@ -136,6 +142,7 @@ class AVRControl:
         keyboard.add_hotkey('ctrl+alt+F5', self.change_HDMI_audio)
         keyboard.add_hotkey('ctrl+alt+up', lambda: self.change_volume(self.volumeUP))
         keyboard.add_hotkey('ctrl+alt+down', lambda: self.change_volume(self.volumeDOWN))
+        keyboard.add_hotkey('ctrl+alt+R', self.reconnect)
     
     def run(self):
         self.connect_receiver(self.ip_address)
@@ -145,9 +152,24 @@ class AVRControl:
 
         while self.running:
             time.sleep(10)
+            self.test_onkyo()
+
+    def reconnect(self):
+        self.disconnect_receiver()
+        self.connect_receiver(self.ip_address)
 
     def stop(self):
         self.running=False
         self.disconnect_receiver()
+
+    def test_onkyo(self):
+        response = ping(self.ip_address, 2)
+        if response is not None:
+            return True
+        else:
+            self.noti(f"Cant Reach AVR: Retry Connection")
+            self.reconnect()
+
+ 
 
         

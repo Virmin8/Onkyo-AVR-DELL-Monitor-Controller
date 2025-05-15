@@ -13,8 +13,8 @@ monitor_amount = config_dict['monitor_amount']
 main = av(ip_address,monitor_model,monitor_amount)
 
 def reconnect(systray):
-    main.stop()
-    main.run()
+    main.reconnect()
+    
     
 def exit_app(systray):
     main.stop()
