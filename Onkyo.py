@@ -65,11 +65,13 @@ class AVRControl:
 
     def default_startup(self):
         try:
-            self.receiver.raw(self.powerOn)  
-            self.receiver.raw(self.sourcePC)
+            if self.receiver.raw("PWRQSTN") != self.powerOn:
+                self.receiver.raw(self.powerOn)  
+            if self.receiver.raw("SLIQSTN") != self.sourcePC:
+                self.receiver.raw(self.sourcePC)
             with self.monitors as monitor:
-                if (monitor.get_input_source() != "InputSource.DP1"):
-                    monitor.set_input_source(self.monitorDP)
+                if (str(monitor.get_input_source()) != "InputSource.DP1"):
+                   monitor.set_input_source(self.monitorDP)
             self.noti("Switched On")
             self.receiver.raw(self.hdmiAudioOff)
         except Exception as e:
