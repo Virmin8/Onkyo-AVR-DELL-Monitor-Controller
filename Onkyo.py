@@ -2,40 +2,49 @@ import keyboard
 import eiscp
 import time
 from notifypy import Notify
-from monitorcontrol import get_monitors
+from monitorcontrol import *
 from ping3 import ping
+import threading
 
 class AVRControl:
-    def __init__(self,ip_address,model,amount):
-        self.ip_address= ip_address   
-        self.receiver = None                              #Zone 2 has to stay on to establish connection in standby mode
+    def __init__(self,ip_address,model,default_input):
+        self.ip_address = ip_address
+        self.receiver = None
+        self.monitor = None
+        self.monitor_model = model
+
+        # AVR Commands
         self.sourceBD = "SLI10"
-        self.sourcePC= "SLI05"
+        self.sourcePC = "SLI05"
         self.sourceGame = "SLI02"
         self.zoneBD = "SLZ10"
         self.zoneGame = "SLZ02"
         self.powerOn = "PWR01"
         self.powerOff = "PWR00"
         self.volumeUP = "MVLUP"
-        self.volumeDOWN= "MVLDOWN"
-        self.hdmiAudioOn= "HAO01"
-        self.hdmiAudioOff= "HAO00"
-        self.monitorDP = 15
-        self.monitorHDMI= 17
-        self.monitorHDMI2= 18
-        self.running= True
-        self.monitors = None 
-        self.monitor_model = model
-        self.monitor_amount = amount
+        self.volumeDOWN = "MVLDOWN"
+        self.hdmiAudioOn = "HAO01"
+        self.hdmiAudioOff = "HAO00"
+
+        # Monitor Inputs
+        self.monitorDP = "DP1"
+        self.monitorHDMI = "HDMI1"
+        self.monitorHDMI2 = "HDMI2"
+        self.defaultInput = default_input
+
+        # State
+        self.running = True
         self.last_message = None
+        self.hdmiAudio_state = None
 
     def get_main_monitor(self):    
-        for x in range(self.monitor_amount):   
+        for monitor in get_monitors():
             try:
-                self.monitors = get_monitors()[x]   
-                with self.monitors:
-                    test = self.monitors.get_vcp_capabilities()
-                    if test["model"] == self.monitor_model:
+                with monitor:
+                    x = monitor.get_vcp_capabilities()
+                    print (x)
+                    if x["model"] == self.monitor_model:
+                        self.monitors = monitor
                         break
             except Exception:
                 pass
@@ -70,8 +79,12 @@ class AVRControl:
             if self.receiver.raw("SLIQSTN") != self.sourcePC:
                 self.receiver.raw(self.sourcePC)
             with self.monitors as monitor:
-                if (str(monitor.get_input_source()) != "InputSource.DP1"):
+                input_source_raw: int = monitor.get_input_source()
+                if (InputSource(input_source_raw).name != self.defaultInput):
                    monitor.set_input_source(self.monitorDP)
+                   self.noti("Monitor Input Changed to Default")
+                else: 
+                    self.noti("Monitor Default Input")
             self.noti("Switched On")
             self.receiver.raw(self.hdmiAudioOff)
         except Exception as e:
@@ -134,17 +147,27 @@ class AVRControl:
             self.receiver.raw(change) 
         except Exception as e:
             self.noti(f"Error changing Volume: {e}")
-        
+
+    def turn_off_AVR_shutdown(self):
+        if self.receiver.raw("SLIQSTN") == self.sourcePC:
+            self.receiver.raw(self.powerOff)
+
+
+    def safe_action(self, action):
+        try:
+            action()
+        except Exception as e:
+            self.noti(f"Hotkey Error: {e}")
+
     def setup_hotkeys(self):
-        keyboard.add_hotkey('ctrl+alt+p', self.toggle_power)
-        keyboard.add_hotkey('ctrl+alt+F1', lambda: self.change_source(self.sourcePC,self.monitorDP, "Source: PC"))
-        keyboard.add_hotkey('ctrl+alt+F2', lambda: self.change_source(self.sourceBD,self.monitorHDMI2, "Source: BD"))
-        keyboard.add_hotkey('ctrl+alt+F3', lambda: self.change_source(self.sourceGame,self.monitorHDMI, "Source: Game"))
-        #keyboard.add_hotkey('ctrl+alt+F6', lambda: self.change_zone(self.zoneDefault,"Zone 2: PC")) not using Zone 2 anymore
-        keyboard.add_hotkey('ctrl+alt+F5', self.change_HDMI_audio)
-        keyboard.add_hotkey('ctrl+alt+up', lambda: self.change_volume(self.volumeUP))
-        keyboard.add_hotkey('ctrl+alt+down', lambda: self.change_volume(self.volumeDOWN))
-        keyboard.add_hotkey('ctrl+alt+R', self.reconnect)
+        keyboard.add_hotkey('ctrl+alt+p', lambda: self.safe_action(self.toggle_power))
+        keyboard.add_hotkey('ctrl+alt+F1', lambda: self.safe_action(lambda: self.change_source(self.sourcePC, self.monitorDP, "Source: PC")))
+        keyboard.add_hotkey('ctrl+alt+F2', lambda: self.safe_action(lambda: self.change_source(self.sourceBD, self.monitorHDMI2, "Source: BD")))
+        keyboard.add_hotkey('ctrl+alt+F3', lambda: self.safe_action(lambda: self.change_source(self.sourceGame, self.monitorHDMI, "Source: Game")))
+        keyboard.add_hotkey('ctrl+alt+F5', lambda: self.safe_action(self.change_HDMI_audio))
+        keyboard.add_hotkey('ctrl+alt+up', lambda: self.safe_action(lambda: self.change_volume(self.volumeUP)))
+        keyboard.add_hotkey('ctrl+alt+down', lambda: self.safe_action(lambda: self.change_volume(self.volumeDOWN)))
+        keyboard.add_hotkey('ctrl+alt+R', lambda: self.safe_action(self.reconnect))
     
     def run(self):
         self.connect_receiver(self.ip_address)
@@ -165,12 +188,16 @@ class AVRControl:
         self.disconnect_receiver()
 
     def test_onkyo(self):
-        response = ping(self.ip_address, 2)
-        if response is not None:
+        try:
+            response = ping(self.ip_address, timeout=2)
+            if response is None:
+                self.noti("Can't reach AVR: Attempting reconnect...")
+                self.reconnect()
+                return False
             return True
-        else:
-            self.noti(f"Cant Reach AVR: Retry Connection")
-            self.reconnect()
+        except Exception as e:
+            self.noti(f"Ping error: {e}")
+            return False
 
  
 
