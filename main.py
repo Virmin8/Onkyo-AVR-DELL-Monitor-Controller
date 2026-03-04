@@ -1,6 +1,6 @@
 from infi.systray import SysTrayIcon
 from onkyo import AVRControl as av
-from onkyo import time
+from onkyo import time, VolumeOSD
 import yaml
 import threading
 
@@ -19,10 +19,16 @@ def reconnect(systray):
     
 def exit_app(systray):
     main.stop()
+    osd.root.quit()
 
 menu_options = (("Reconnect",None, reconnect),)
 systray = SysTrayIcon("icon.ico","AVR Control", menu_options, on_quit=exit_app) 
 
 if __name__ == "__main__":
+
     threading.Thread(target=main.run, daemon=True).start()
+    osd = VolumeOSD()
+    main.osd= osd
     systray.start()
+    osd.root.mainloop()
+    

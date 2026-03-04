@@ -5,6 +5,7 @@ from notifypy import Notify
 from monitorcontrol import *
 from ping3 import ping
 import threading
+from Volume import VolumeOSD
 
 class AVRControl:
     def __init__(self,ip_address,model,default_input):
@@ -37,6 +38,9 @@ class AVRControl:
         self.last_message = None
         self.hdmiAudio_state = None
 
+        self.current_volume = None
+        
+
     def get_main_monitor(self):    
         for monitor in get_monitors():
             try:
@@ -56,7 +60,7 @@ class AVRControl:
         self.last_message = message_user
         notification = Notify()
         notification.title = "Onkyo Control"
-        notification.timeout = 1000
+        notification.timeout = 100
         notification.message = self.last_message
         notification.icon = "icon.ico"
         notification.send()
@@ -145,6 +149,13 @@ class AVRControl:
     def change_volume(self,change): #change main volume
         try:
             self.receiver.raw(change) 
+            self.current_volume = self.receiver.raw("MVLQSTN")
+            if self.current_volume and "MVL" in self.current_volume:
+                hex_vol = self.current_volume.split("MVL")[-1][:2]
+                self.current_volume = int(hex_vol, 16)
+
+                self.osd.show(self.current_volume)
+            
         except Exception as e:
             self.noti(f"Error changing Volume: {e}")
 
