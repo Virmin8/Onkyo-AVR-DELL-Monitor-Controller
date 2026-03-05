@@ -9,6 +9,7 @@ class VolumeOSD:
         self.root.overrideredirect(True)
         self.root.attributes("-topmost", True)
         self.root.attributes("-alpha", 0.95)
+        self.root.attributes("-toolwindow", True)
 
         width = 320
         height = 110
